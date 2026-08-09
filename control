@@ -1,0 +1,9 @@
+Package: com.whj.keypilot
+Name: KeyPilot
+Version: 0.3.0
+Architecture: iphoneos-arm64
+Description: Launch or foreground apps with global hardware keyboard shortcuts.
+Maintainer: wanghuangjie
+Author: wanghuangjie
+Section: Tweaks
+Depends: firmware (>= 15.0), mobilesubstrate | ellekit, com.conradkramer.open
