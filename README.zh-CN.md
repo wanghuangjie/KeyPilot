@@ -14,6 +14,12 @@
 
 KeyPilot 是一个面向 rootless 越狱 iPadOS 的 tweak，带独立配置 App。录入硬件键盘组合键并选择已安装 App 后，即可在全局启动它；如果 App 已在后台，则直接切回前台。同时保留 URL 和 shell 动作。
 
+## 界面截图
+
+<p align="center">
+  <img src="screenshots/ipados.jpeg" alt="KeyPilot 在 iPadOS 上的简体中文界面">
+</p>
+
 ## 主要功能
 
 - 在 SpringBoard 和前台 UIKit App 中捕获快捷键

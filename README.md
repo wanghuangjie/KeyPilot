@@ -14,6 +14,12 @@
 
 KeyPilot is a rootless iPadOS tweak with a standalone configuration app. Record a hardware-keyboard shortcut, select an installed app, and use the shortcut globally to launch it or bring its existing process to the foreground. URL and shell actions are also supported.
 
+## Screenshot
+
+<p align="center">
+  <img src="screenshots/ipados.jpeg" alt="KeyPilot running on iPadOS with Simplified Chinese interface">
+</p>
+
 ## Features
 
 - Captures shortcuts in SpringBoard and foreground UIKit apps

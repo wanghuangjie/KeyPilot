@@ -51,7 +51,7 @@ Download: https://github.com/wanghuangjie/KeyPilot/releases/download/v0.3.0/com.
 
 Source: https://github.com/wanghuangjie/KeyPilot
 
-Icon: https://raw.githubusercontent.com/wanghuangjie/KeyPilot/main/assets/keypilot-icon-master.png
+Screenshot: https://raw.githubusercontent.com/wanghuangjie/KeyPilot/main/screenshots/ipados.jpeg
 
 PayPal donations: **wanghuangjie@vip.qq.com**
 
@@ -79,7 +79,7 @@ Bug reports are welcome. If a shortcut works on SpringBoard but not inside a spe
 
 源码：https://github.com/wanghuangjie/KeyPilot
 
-图标：https://raw.githubusercontent.com/wanghuangjie/KeyPilot/main/assets/keypilot-icon-master.png
+截图：https://raw.githubusercontent.com/wanghuangjie/KeyPilot/main/screenshots/ipados.jpeg
 
 PayPal 捐赠：**wanghuangjie@vip.qq.com**
 
