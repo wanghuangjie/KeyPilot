@@ -22,6 +22,7 @@ KeyPilot 是一个面向 rootless 越狱 iPadOS 的 tweak，带独立配置 App�
 
 ## 主要功能
 
+- 可选窗口布局快捷键与真正返回主页（需要带桥接接口的 MacStatusBar&Dock 核心）
 - 在 SpringBoard 和前台 UIKit App 中捕获快捷键
 - 图形化录入组合键，无需手写 HID key code
 - 搜索并手动选择已安装 App，自动填写 Bundle ID
@@ -44,6 +45,18 @@ KeyPilot 是一个面向 rootless 越狱 iPadOS 的 tweak，带独立配置 App�
 开发目标设备是 iPadOS 17.0 的 M1 iPad。仅有 TrollStore 不够，KeyPilot 需要 tweak 注入环境。
 
 ## 动作语法
+
+0.4.2 本地版：新窗口默认填满可用区域，关闭自动平铺及左右选择提示；可继续用快捷键调整半屏。首次升级会添加 Command+H → `system:home` 返回主屏幕，之后可在规则列表修改或停用。
+
+### 窗口布局（0.4.1，本地集成版）
+
+点右侧列表按钮 → **窗口布局**，可选择左右半屏、上下半屏、四个角、填满屏幕、居中和大小窗口。需要安装带 KeyPilot 桥接接口的 [MacStatusBar&Dock](https://github.com/BesiktasliSeba/MacStatusBarAndDock) 核心并启用窗口引擎。此版本直接调用布局函数，不展开菜单。已在 M1 iPad / iPadOS 17.0 上验证左半屏、右半屏和填满屏幕的直达调用；[开发者对接说明与窗口专用补丁](integrations/WINDOW_MANAGEMENT.md)。
+
+0.4.3 集成代码作为开发者参考源码公开，本次不发布新的二进制安装包。桥接接口是本地新增接口，不是上游原版默认提供的 API；不包含 Dock 定位或输入法实验。
+
+支持 `window:left-half`、`window:right-half`、`window:top-half`、`window:bottom-half`、`window:top-left`、`window:top-right`、`window:bottom-left`、`window:bottom-right`、`window:fill`、`window:center`、`window:small`、`window:large`。也可简写为 `window:left`、`window:right`、`window:top`、`window:bottom`；`window:maximize` 等同于 `window:fill`。
+
+例如录入 Control+Option+左方向键，选择“左半屏”，之后在目标 App 窗口按下即可。接口未加载、窗口引擎禁用、App 必须全屏、锁屏或工作区正在切换时，“执行日志”会说明原因。以后升级上游 MacStatusBar&Dock 会覆盖定制核心，需要为新版本重新构建桥接。GPL 上游源码与 MIT KeyPilot 客户端分别维护。
 
 | 写法 | 含义 | 示例 |
 |---|---|---|
@@ -87,3 +100,5 @@ rootless 安装包会生成在 `packages/` 目录。
 ## 开源协议
 
 KeyPilot 使用 [MIT License](LICENSE) 开源。
+
+`integrations/` 中的 MacStatusBar&Dock 桥接与上游补丁单独采用 GPL-3.0-only；详见[开发者集成说明](integrations/WINDOW_MANAGEMENT.md#source-patch-and-build-boundary)。

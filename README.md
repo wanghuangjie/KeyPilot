@@ -22,6 +22,7 @@ KeyPilot is a rootless iPadOS tweak with a standalone configuration app. Record 
 
 ## Features
 
+- Optional direct window-layout shortcuts and real Home through a custom MacStatusBar&Dock bridge
 - Captures shortcuts in SpringBoard and foreground UIKit apps
 - Visual shortcut recording; no HID key codes to enter
 - Searchable installed-app picker with automatic Bundle ID entry
@@ -44,6 +45,18 @@ KeyPilot is a rootless iPadOS tweak with a standalone configuration app. Record 
 The development target is an M1 iPad running iPadOS 17.0. TrollStore by itself is not sufficient because KeyPilot requires tweak injection.
 
 ## Action syntax
+
+The local 0.4.2 core opens new windows at Fill and disables automatic tiling and its side-selection prompt. KeyPilot adds Command+H → `system:home` once; that rule can be edited or disabled in the rule list.
+
+### Window layouts (0.4.1, local integration)
+
+Use the list button → **Window Layout** to choose a layout. This integration requires a custom [MacStatusBar&Dock](https://github.com/BesiktasliSeba/MacStatusBarAndDock) core with the KeyPilot layout bridge and an enabled window engine. KeyPilot calls its layout function directly without opening menus. Direct left-half, right-half and fill dispatch have been verified on the M1 iPad / iPadOS 17.0. See the [developer handoff, API contract and window-only patch](integrations/WINDOW_MANAGEMENT.md).
+
+The 0.4.3 integration is published as source for developer reference, not as a new binary release. The bridge exports are custom additions, not APIs assumed to exist in the stock upstream package. Dock positioning and input-method experiments are not included.
+
+Actions: `window:left-half`, `window:right-half`, `window:top-half`, `window:bottom-half`, `window:top-left`, `window:top-right`, `window:bottom-left`, `window:bottom-right`, `window:fill`, `window:center`, `window:small`, `window:large`. Short forms such as `window:left` and `window:maximize` are accepted. Bind, for example, Control+Option+Left to `window:left-half`.
+
+The action uses the app window currently selected by MacStatusBar&Dock. It reports missing bridge, disabled engine, full-screen-only app, lock screen and in-progress workspace transitions in Execution Log. Installing stock upstream updates replaces the custom core and requires rebuilding the bridge. MacStatusBar&Dock's GPL sources are maintained separately from the MIT KeyPilot client.
 
 | Syntax | Action | Example |
 |---|---|---|
@@ -93,3 +106,6 @@ If KeyPilot is useful to you, donations are welcome via PayPal: **wanghuangjie@v
 ## License
 
 KeyPilot is released under the [MIT License](LICENSE).
+
+The MacStatusBar&Dock bridge and upstream patch in `integrations/` are separately
+licensed GPL-3.0-only; see [developer integration licensing](integrations/WINDOW_MANAGEMENT.md#source-patch-and-build-boundary).

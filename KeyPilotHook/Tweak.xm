@@ -8,6 +8,7 @@
 #import <fcntl.h>
 #import <notify.h>
 #import "KPShared.h"
+#import "KPWindowController.h"
 
 extern char **environ;
 
@@ -347,12 +348,57 @@ static void KPRunShellCommand(NSString *command) {
     });
 }
 
+static void KPReturnHome(void) {
+    if (KPPerformHomeAction(^(BOOL success, NSString *message) {
+        KPLog(@"Home action %@: %@", success ? @"verified" : @"not verified", message);
+    })) return;
+    UIApplication *app = UIApplication.sharedApplication;
+    for (NSString *name in @[@"_simulateHomeButtonPress", @"_simulateHomeButtonPressWithCompletion:"]) {
+        SEL selector = NSSelectorFromString(name);
+        if (![app respondsToSelector:selector]) continue;
+        if ([name hasSuffix:@":"]) ((void (*)(id, SEL, id))objc_msgSend)(app, selector, nil);
+        else ((void (*)(id, SEL))objc_msgSend)(app, selector);
+        KPLog(@"Home action dispatched via %@", name);
+        return;
+    }
+    KPLog(@"Home action unavailable: no supported SpringBoard selector");
+}
+
+static void KPSeedHomeShortcut(void) {
+    CFStringRef domain = (__bridge CFStringRef)KPPreferencesDomain;
+    if (CFPreferencesGetAppBooleanValue(CFSTR("HomeShortcutSeeded"), domain, NULL)) return;
+    NSMutableArray *rules = [KPLoadRules() mutableCopy];
+    NSUInteger found = NSNotFound;
+    for (NSUInteger i = 0; i < rules.count; i++) {
+        NSDictionary *r = rules[i];
+        if ([r[@"modifiers"] unsignedIntegerValue] == UIKeyModifierCommand &&
+            ([r[@"keyCode"] unsignedIntegerValue] == UIKeyboardHIDUsageKeyboardH ||
+             [KPNormalizedKeyInput(r[@"key"] ?: @"") isEqualToString:@"h"])) { found = i; break; }
+    }
+    NSDictionary *home = @{@"key": @"h", @"keyCode": @(UIKeyboardHIDUsageKeyboardH),
+                            @"modifiers": @(UIKeyModifierCommand), @"action": @"system:home",
+                            @"enabled": @YES, @"passthrough": @NO};
+    if (found != NSNotFound) rules[found] = home;
+    else if (rules.count < KPMaximumRuleCount) [rules addObject:home];
+    else { KPLog(@"Cannot add Command+H: rule limit reached"); return; }
+    KPSaveRules(rules);
+    CFPreferencesSetAppValue(CFSTR("HomeShortcutSeeded"), kCFBooleanTrue, domain);
+    CFPreferencesAppSynchronize(domain);
+    KPLog(@"Command+H Home shortcut installed");
+}
+
 static void KPExecuteAction(NSString *rawAction) {
     NSString *action = [rawAction stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     if (action.length == 0) return;
 
     NSString *lowercase = action.lowercaseString;
-    if ([lowercase hasPrefix:@"app:"]) {
+    if ([lowercase isEqualToString:@"system:home"]) {
+        KPReturnHome();
+    } else if ([lowercase hasPrefix:@"window:"]) {
+        KPPerformWindowAction(KPTrimmedValueAfterPrefix(action, @"window:"), ^(BOOL success, NSString *message) {
+            KPLog(@"Window action %@: %@ (%@)", action, success ? @"dispatched" : @"failed", message);
+        });
+    } else if ([lowercase hasPrefix:@"app:"]) {
         KPOpenApplication(KPTrimmedValueAfterPrefix(action, @"app:"));
     } else if ([lowercase hasPrefix:@"open:"]) {
         KPOpenApplication(KPTrimmedValueAfterPrefix(action, @"open:"));
@@ -444,6 +490,7 @@ static BOOL KPHandlePressesEvent(UIPressesEvent *event) {
                           [NSProcessInfo.processInfo.processName isEqualToString:@"SpringBoard"];
         KPRegisterRuleStateTokens();
         if (KPIsSpringBoard) {
+            KPSeedHomeShortcut();
             KPReloadRules();
         } else {
             KPLoadExportedRuleStates();

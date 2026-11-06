@@ -1,6 +1,6 @@
 Package: com.whj.keypilot
 Name: KeyPilot
-Version: 0.3.0
+Version: 0.4.3
 Architecture: iphoneos-arm64
 Description: Launch or foreground apps with global hardware keyboard shortcuts.
 Maintainer: wanghuangjie

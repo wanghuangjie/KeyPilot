@@ -6,3 +6,5 @@ KeyPilot/Resources/keypilot-icon-master.png
 *.dSYM/
 DerivedData/
 xcuserdata/
+integrations/macstatusbar-src/
+integrations/backups/

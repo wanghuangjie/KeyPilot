@@ -1,5 +1,6 @@
 #import "KPAppDelegate.h"
 #import "KPShared.h"
+#import "KPWindowActions.h"
 #import <objc/message.h>
 #import <dlfcn.h>
 
@@ -238,7 +239,7 @@ typedef void (^KPAppSelectionHandler)(NSString *bundleIdentifier, NSString *disp
 
     self.appPickerButton = [UIButton buttonWithType:UIButtonTypeSystem];
     [self.appPickerButton setImage:[UIImage systemImageNamed:@"list.bullet"] forState:UIControlStateNormal];
-    self.appPickerButton.accessibilityLabel = NSLocalizedString(@"app_picker.title", nil);
+    self.appPickerButton.accessibilityLabel = NSLocalizedString(@"action.choose", nil);
 
     self.enabledSwitch = [[UISwitch alloc] init];
 
@@ -434,6 +435,50 @@ typedef void (^KPAppSelectionHandler)(NSString *bundleIdentifier, NSString *disp
 - (void)selectApp:(UIButton *)sender {
     NSUInteger index = (NSUInteger)sender.tag;
     if (index >= self.rules.count) return;
+    UIAlertController *menu = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"action.choose", nil)
+                                                                 message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    [menu addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"app_picker.title", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        [self showAppPicker:sender];
+    }]];
+    [menu addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"window.choose", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        [self showWindowPicker:sender];
+    }]];
+    [menu addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"system.home", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        if (index >= self.rules.count) return;
+        self.rules[index][@"action"] = @"system:home";
+        [self saveRules];
+        [self.tableView reloadData];
+    }]];
+    [menu addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
+    menu.popoverPresentationController.sourceView = sender;
+    menu.popoverPresentationController.sourceRect = sender.bounds;
+    [self presentViewController:menu animated:YES completion:nil];
+}
+
+- (void)showWindowPicker:(UIButton *)sender {
+    NSUInteger index = (NSUInteger)sender.tag;
+    if (index >= self.rules.count) return;
+    UIAlertController *menu = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"window.choose", nil)
+                                                                 message:NSLocalizedString(@"window.requirement", nil)
+                                                          preferredStyle:UIAlertControllerStyleActionSheet];
+    for (NSString *name in KPWindowActionNames()) {
+        NSString *key = [@"window." stringByAppendingString:name];
+        [menu addAction:[UIAlertAction actionWithTitle:NSLocalizedString(key, nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+            if (index >= self.rules.count) return;
+            self.rules[index][@"action"] = [@"window:" stringByAppendingString:name];
+            [self saveRules];
+            [self.tableView reloadData];
+        }]];
+    }
+    [menu addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"common.cancel", nil) style:UIAlertActionStyleCancel handler:nil]];
+    menu.popoverPresentationController.sourceView = sender;
+    menu.popoverPresentationController.sourceRect = sender.bounds;
+    [self presentViewController:menu animated:YES completion:nil];
+}
+
+- (void)showAppPicker:(UIButton *)sender {
+    NSUInteger index = (NSUInteger)sender.tag;
+    if (index >= self.rules.count) return;
 
     KPAppPickerController *picker = [[KPAppPickerController alloc] initWithStyle:UITableViewStyleInsetGrouped];
     __weak typeof(self) weakSelf = self;
@@ -497,7 +542,7 @@ typedef void (^KPAppSelectionHandler)(NSString *bundleIdentifier, NSString *disp
 }
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
-    return YES;
+    return indexPath.section == 0;
 }
 
 - (void)tableView:(UITableView *)tableView

@@ -1,0 +1,82 @@
+--- a/statusbar/StatusBar.x
++++ b/statusbar/StatusBar.x
+@@ -1922,17 +1922,8 @@
+     CFPreferencesSynchronize(MSB_DOMAIN, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+ }
+ static BOOL DMFitEnabled(void) {
+-    if (gFitCache >= 0 && CACurrentMediaTime() - gFitCacheAt < 10.0) return gFitCache == 1;
+-    CFPreferencesAppSynchronize(MSB_DOMAIN);
+-    CFPropertyListRef v = CFPreferencesCopyValue(CFSTR("fitToWindow"), MSB_DOMAIN, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+-    if (!v) {   // nothing stored yet: off (the decision for new users; the old seed from Aerial's toggle only served builds that were never public)
+-        DMSetFitEnabled(NO);
+-        return NO;
+-    }
+-    BOOL on = CFGetTypeID(v) == CFBooleanGetTypeID() && CFBooleanGetValue(v);
+-    CFRelease(v);
+-    gFitCache = on; gFitCacheAt = CACurrentMediaTime();
+-    return on;
++    // Local KeyPilot policy: new windows fill, layouts are set by shortcuts.
++    return NO;
+ }
+ // "Open Apps as Windows": every launch (Home Screen, Dock, App Library, Spotlight, links, notifications, our menus) opens the app as a window instead of
+ // full screen. With Aerial it is Aerial's own Control Center toggle (`AerialEnabled`, which by itself only covers taps on icons); MilkyWay has no such
+@@ -4097,7 +4088,7 @@
+     extern BOOL gRestoringWindowsFlag(void);
+     CGRect askedFrame = CGRectNull;
+     BOOL asked = DMZetsuTakeAskedFrame(bundleID, &askedFrame);   // (this app's window asked for at a frame: the green light's way back, a Window menu layout)
+-    CGRect target = asked ? askedFrame : (gLastWindowFrames[bundleID] ? gLastWindowFrames[bundleID].CGRectValue : DMLayoutFrame(@"center"));
++    CGRect target = asked ? askedFrame : DMLayoutFrame(@"fill");
+     DMLog([NSString stringWithFormat:@"[zetsu] new window for %@ at %@ -> %@%@%@", bundleID, NSStringFromCGRect(w.frame), NSStringFromCGRect(target), asked ? @" (asked for)" : @"", gRestoringWindowsFlag() ? @" (being restored)" : @""]);
+     DMZetsuInstallLights(w);
+     DMZetsuSyncAppOrientation(w);
+@@ -8741,6 +8732,13 @@
+     for (UIView *s in DMAerialStages()) if (s != stage && !s.hidden && !DMStageMinimized(s) && DMStageBundle(s).length) [others addObject:s];
+     NSString *me = DMStageBundle(stage);
+     CGRect base = stage.frame, usable = DMLayoutFrame(@"fill");
++    // Apply once when a new stage is adopted. Subsequent shortcut layouts keep
++    // their intent through the existing kStageCascadedKey branch above.
++    if (win && me.length && !CGRectIsNull(usable) && !CGRectIsEmpty(usable)) {
++        DMSetStageIntent(stage, usable);
++        DMAerialMoveStage(stage, usable, nil);
++        return;
++    }
+     BOOL fitOn = DMFitEnabled();
+     DMLog([NSString stringWithFormat:@"[cascade] %@ frame %@, %lu other windows, fit to window %d", me, NSStringFromCGRect(base), (unsigned long)others.count, fitOn]);
+     if (!win || !me.length || CGRectIsNull(usable) || CGRectIsEmpty(base)) { DMLog([NSString stringWithFormat:@"[cascade] %@: nothing to do (window %d, usable %@)", me, win != nil, NSStringFromCGRect(usable)]); return; }
+@@ -15473,7 +15471,7 @@
+     extern void DMWhenAppDrawn(NSString *bundleID, BOOL needFront, double timeout, void (^done)(BOOL ready));
+     DMWhenAppDrawn(bundleID, YES, 5.0, ^(BOOL drawn) {
+         if (![[DMFrontApp() bundleIdentifier] isEqualToString:bundleID]) { finish(@"not in front after 5 s: left as it is"); return; }
+-        CGRect target = gLastWindowFrames[bundleID] ? gLastWindowFrames[bundleID].CGRectValue : DMLayoutFrame(@"center");
++        CGRect target = DMLayoutFrame(@"fill");
+         DMLog([NSString stringWithFormat:@"[windowed] %@: in front and %@ after %.2f s; now into a window at %@", bundleID, drawn ? @"drawn" : @"(timed out waiting for its first frame)", CACurrentMediaTime() - began, NSStringFromCGRect(target)]);
+         void (^open)(void) = ^{
+             DMAerialTrigger(bundleID, target);
+@@ -36773,6 +36771,21 @@
+         } else if (dflt) { sz.normalizedSize = CGSizeMake(0.6, 0.72); c = CGPointMake(0.5, 0.48); }
+         sz.type = 0;
+     }
++    // New/returning window joining the desktop starts at Fill, not a cascade.
++    // Explicit layout changes do not pass through this join path.
++    if (windowed) {
++        CGSize scr = CGSizeZero;
++        CGRect area = DMSMUsableAreaForStage(stage, &scr);
++        CGRect frame = DMSMLayoutFrameIn(@"fill", area, scr);
++        if (scr.width > 0 && scr.height > 0 && !CGRectIsNull(frame) && frame.size.height > kSMBarH) {
++            CGRect card = CGRectMake(frame.origin.x, frame.origin.y + kSMBarH, frame.size.width, frame.size.height - kSMBarH);
++            sz.normalizedSize = CGSizeMake(card.size.width / scr.width, card.size.height / scr.height);
++            sz.referenceBounds = CGRectMake(0, 0, scr.width, scr.height);
++            sz.type = 0;
++            c = CGPointMake(CGRectGetMidX(card) / scr.width, CGRectGetMidY(card) / scr.height);
++            policy = 0;
++        }
++    }
+     return DMSMAttrWith(base, sz, c, policy, MAX(0L, newest + 1));   // (nil if any part is refused: never half-made attributes)
+ }
+ // One full-screen app at a time, as with our other engines (iOS): another app going full screen in the stage sends the previous one away
+@@ -40045,3 +40058,5 @@
+ #endif
+         DMEnsureLogo(0); DMTick(); });
+ }
++
++#include "../../MSBDKeyPilotBridge.inc"
